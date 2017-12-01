@@ -19,13 +19,15 @@ public class BinaryFollowmeImpl implements DeviceListener{
 	private BinaryLight[] binaryLights;
 
 	/** Bind Method for binaryLights dependency */
-	public void bindBinaryLight(BinaryLight binaryLight, Map properties) {
+	public synchronized void bindBinaryLight(BinaryLight binaryLight, Map properties) {
 		  System.out.println("bind binary light " + binaryLight.getSerialNumber());
+		  binaryLight.addListener(this);
 	}
 
 	/** Unbind Method for binaryLights dependency */
-	public void unbindBinaryLight(BinaryLight binaryLight, Map properties) {
+	public synchronized void unbindBinaryLight(BinaryLight binaryLight, Map properties) {
 		  System.out.println("unbind binary light " + binaryLight.getSerialNumber());
+		  binaryLight.removeListener(this);
 	}
 
 	/** Bind Method for presenceSensors dependency */
@@ -46,6 +48,9 @@ public class BinaryFollowmeImpl implements DeviceListener{
 		   for(PresenceSensor sensor :presenceSensors){
 			   sensor.removeListener(this);
 		   }
+		   for(BinaryLight binaryLight :binaryLights){
+			   binaryLight.removeListener(this);
+		   }
 	}
 
 	/** Component Lifecycle Method */
@@ -56,20 +61,39 @@ public class BinaryFollowmeImpl implements DeviceListener{
 	public void devicePropertyModified(GenericDevice device, String propertyName, Object oldValue,Object newValue) {
 		//we assume that we listen only to presence sensor
 		assert device instanceof PresenceSensor : "Device must be a presence sensor only";
-		PresenceSensor changingSensor = (PresenceSensor) device;
-		if (propertyName.equals(PresenceSensor.PRESENCE_SENSOR_SENSED_PRESENCE)) {
-			String detectorLocation =(String) changingSensor.getPropertyValue(LOCATION_PROPERTY_NAME);
-			System.out.println("The device with the serial number : "+changingSensor.getSerialNumber()+" has changed");
-			System.out.println("This sensor is in the room:"+detectorLocation);
-			List<BinaryLight> binaryLightsLocation = getBinaryLightFromlocation(detectorLocation);
-			for (BinaryLight binaryLight : binaryLightsLocation) {
-				if(changingSensor.getSensedPresence()) {
-					binaryLight.setPowerStatus(true);
-				}else {
-					binaryLight.setPowerStatus(false);
+		System.out.println("<<<<<<<<<<< properties"+device.getProperties());;
+		System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");;
+		System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");;
+		System.out.println("<<<<<<<<<<< <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");;
+		if (device.getSerialNumber().contains("Pres")) {
+			PresenceSensor changingSensor = (PresenceSensor) device;
+			if (propertyName.equals(PresenceSensor.PRESENCE_SENSOR_SENSED_PRESENCE)) {
+				String detectorLocation =(String) changingSensor.getPropertyValue(LOCATION_PROPERTY_NAME);
+				System.out.println("The device with the serial number : "+changingSensor.getSerialNumber()+" has changed");
+				System.out.println("This sensor is in the room:"+detectorLocation);
+				List<BinaryLight> binaryLightsLocation = getBinaryLightFromlocation(detectorLocation);
+				for (BinaryLight binaryLight : binaryLightsLocation) {
+					if(changingSensor.getSensedPresence()) {
+						binaryLight.setPowerStatus(true);
+					}else {
+						binaryLight.setPowerStatus(false);
+					}
+				}
+			}
+		}else if(device.getSerialNumber().contains("BiLi")) {
+			BinaryLight changingLight = (BinaryLight) device;
+			for (PresenceSensor presenceSensor : presenceSensors) {
+				if(presenceSensor.getPropertyValue(LOCATION_PROPERTY_NAME).equals(changingLight.getPropertyValue(LOCATION_PROPERTY_NAME))) {
+					if (presenceSensor.getSensedPresence()) {
+						changingLight.setPowerStatus(true);
+					}else {
+						changingLight.setPowerStatus(false);
+					}
 				}
 			}
 		}
+		//System.out.println("<<<<<<<<<<< TEST 2 >>>>>>>>>");;
+
 	}
 	/**
 	 * The name of the LOCATION property
