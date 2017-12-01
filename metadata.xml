@@ -11,6 +11,10 @@
     </requires>
     <callback method="start" transition="validate"/>
     <callback method="stop" transition="invalidate"/>
+    <requires aggregate="true" optional="true" specification="fr.liglab.adele.icasa.device.light.DimmerLight" field="dimmerLights">
+      <callback method="bindDimmerLight" type="bind"/>
+      <callback method="unbindDimmerLight" type="unbind"/>
+    </requires>
   </component>
   <instance component="BinaryFollowme" name="my.first.follow.me"/>
 </ipojo>
